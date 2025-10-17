@@ -46,25 +46,29 @@ All requests inherit authentication automatically. Just click **Send** on any re
 
 ```
 Prisma AIRS/
-├── AI-Runtime Testing/          # Core threat detection tests
-│   ├── Detect Prompt Injection
-│   ├── Detect Malicious URL
-│   ├── Detect Sensitive Data (DLP)
-│   ├── Detect Database Security Attack
-│   ├── Detect Toxic Content
-│   ├── Detect Malicious Code
-│   └── ...
+├── 📂 AI-Runtime Testing/              # Core threat detection tests
+│   ├── POST Detect Prompt Injection
+│   ├── POST Detect Malicious URL
+│   ├── POST Detect Sensitive Data (DLP)
+│   ├── POST Detect Database Security Attack
+│   ├── POST Detect Toxic Content
+│   ├── POST Detect Malicious Code
+│   ├── POST Detect Agent Manipulation
+│   ├── POST Multiple Threats Combined
+│   ├── POST Benign Content Baseline
+│   └── POST Advanced DLP Patterns
 │
-├── Enhanced Use Cases/           # Official documentation scenarios
-│   ├── UC-Enhanced-1: Prompt Injection
-│   ├── UC-Enhanced-2: Malicious URL
-│   ├── UC-Enhanced-3: DLP Detection
-│   └── ...
+├── 📂 Synchronous Scan/                # Immediate results
+│   ├── POST Sync-1: Scan Prompt
+│   └── POST Sync-2: Scan Response
 │
-└── Advanced Testing/             # Additional test scenarios
-    ├── Batch Requests
-    ├── Async Scanning
-    └── Custom Profiles
+├── 📂 Asynchronous Scan/               # Batch processing
+│   ├── POST Async-1: Scan Prompt
+│   └── POST Async-2: Scan Response
+│
+└── 📂 Reports/                          # Query scan results
+    ├── GET Report-1: Get Results by ScanID
+    └── GET Report-2: Get Detailed Reports by ScanID
 ```
 
 ## 🛡️ Threat Detection Categories
@@ -89,7 +93,14 @@ The collection is pre-configured with:
 - **Authentication**: API Key in header (`x-pan-token`)
 - **Base URL**: `https://service.api.aisecurity.paloaltonetworks.com`
 - **Content-Type**: `application/json`
-- **Profile Name**: `advancedtest` (hardcoded in requests)
+- **Profile Name**: `advancedtest` (used in AI-Runtime Testing folder)
+
+### Folder Overview
+
+- **AI-Runtime Testing**: Comprehensive threat detection test cases covering all security categories
+- **Synchronous Scan**: Real-time scanning examples for prompts and responses
+- **Asynchronous Scan**: Batch processing examples for high-volume scanning
+- **Reports**: Query endpoints to retrieve scan results by ID
 
 ### Request Structure
 
@@ -499,7 +510,8 @@ Found a problem? Please include:
 ## 📞 Support
 
 - [Prisma AIRS Documentation](https://pan.dev/prisma-airs/)
-- [GitHub Issues](https://github.com/yourusername/prisma-airs/issues)
+- [GitHub Repository](https://github.com/scthornton/prisma-airs-postman)
+- [GitHub Issues](https://github.com/scthornton/prisma-airs-postman/issues)
 - [Palo Alto Networks Support](https://support.paloaltonetworks.com/)
 
 ---
