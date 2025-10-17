@@ -47,11 +47,11 @@ Thank you for your interest in contributing! This document provides guidelines a
 ```bash
 # Fork the repository on GitHub
 # Then clone your fork
-git clone https://github.com/YOUR_USERNAME/prisma-airs.git
-cd prisma-airs
+git clone https://github.com/YOUR_USERNAME/prisma-airs-postman.git
+cd prisma-airs-postman
 
 # Add upstream remote
-git remote add upstream https://github.com/ORIGINAL_OWNER/prisma-airs.git
+git remote add upstream https://github.com/scthornton/prisma-airs-postman.git
 ```
 
 ### Set Up Development Environment
