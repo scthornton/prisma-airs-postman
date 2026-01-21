@@ -3,9 +3,9 @@
 ## [Unreleased]
 
 ### Added
-- Postman collection for Prisma AIRS testing
-- Test prompts for AI runtime security evaluation
-- Prompt injection test cases
-- Contributing guidelines
+- Palo Alto Networks MCP Server for Claude Desktop
+- Model Context Protocol integration
+- Setup script and configuration
+- Examples and documentation
 
-[Unreleased]: https://github.com/scthornton/prisma-airs-postman/commits/main
+[Unreleased]: https://github.com/scthornton/panw-mcp-claude/commits/main
