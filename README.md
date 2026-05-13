@@ -30,6 +30,7 @@ The collection uses a variable for authentication:
 3. Set the **`x-pan-token`** variable to your Prisma AIRS API key
    - **Current Value**: `your-api-key-here`
    - This value is **not exported** with the collection
+4. Set the other variables for profile name, app_name, user_name, and ai_model
 
 **Example:**
 ```
