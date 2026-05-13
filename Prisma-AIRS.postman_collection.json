@@ -3149,29 +3149,29 @@
   },
   "variable": [
     {
-      "id": "cbd2ae0f-2b84-4cbf-ab86-eb18eec708e2",
+      "id": "b6762ae7-2214-4d49-9a42-27bf36729189",
       "key": "x-pan-token",
       "value": "{{x-pan-token}}"
     },
     {
-      "id": "e2ccf52f-26ce-42cf-a51c-a075e2d443f4",
+      "id": "7bdf9717-ec0d-44ed-8186-491ed059345d",
       "key": "airs_profile_name",
-      "value": ""
+      "value": "advancedtest"
     },
     {
-      "id": "f22ac21d-00de-4585-9789-643596352e69",
+      "id": "814ecb44-2a40-46f0-b0a2-57c30002a874",
       "key": "airs_app_name",
-      "value": ""
+      "value": "scott"
     },
     {
-      "id": "265c2bbe-c043-42e0-b705-66bce77d806c",
+      "id": "7cd25f55-ac0b-49e6-b69a-8152be0dc9c7",
       "key": "airs_app_user",
-      "value": ""
+      "value": "admin"
     },
     {
-      "id": "cabbeb86-0773-44fb-b434-45727090b220",
+      "id": "70b3bdc1-2cc2-4ae2-8a17-739fd1e30eb6",
       "key": "airs_ai_model",
-      "value": ""
+      "value": "scottai"
     }
   ]
 }
