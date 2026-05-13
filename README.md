@@ -57,7 +57,9 @@ Prisma AIRS/
 │   ├── POST Detect Agent Manipulation
 │   ├── POST Multiple Threats Combined
 │   ├── POST Benign Content Baseline
-│   └── POST Advanced DLP Patterns
+│   ├── POST Advanced DLP Patterns
+|   ├── POST Benign MCP Tool Use
+|   ├── POST Malicious MCP Tool Use
 │
 ├── 📂 Synchronous Scan/                # Immediate results
 │   ├── POST Sync-1: Scan Prompt
@@ -94,7 +96,7 @@ The collection is pre-configured with:
 - **Authentication**: API Key in header (`x-pan-token`)
 - **Base URL**: `https://service.api.aisecurity.paloaltonetworks.com`
 - **Content-Type**: `application/json`
-- **Profile Name**: `advancedtest` (used in AI-Runtime Testing folder)
+- **Profile Name**: `{{airs_profile_name}}` (used in AI-Runtime Testing folder)
 
 ### Folder Overview
 
