@@ -30,6 +30,7 @@ The collection uses a variable for authentication:
 3. Set the **`x-pan-token`** variable to your Prisma AIRS API key
    - **Current Value**: `your-api-key-here`
    - This value is **not exported** with the collection
+4. Set the other variables for profile name, app_name, user_name, and ai_model
 
 **Example:**
 ```
@@ -56,7 +57,9 @@ Prisma AIRS/
 │   ├── POST Detect Agent Manipulation
 │   ├── POST Multiple Threats Combined
 │   ├── POST Benign Content Baseline
-│   └── POST Advanced DLP Patterns
+│   ├── POST Advanced DLP Patterns
+|   ├── POST Benign MCP Tool Use
+|   ├── POST Malicious MCP Tool Use
 │
 ├── 📂 Synchronous Scan/                # Immediate results
 │   ├── POST Sync-1: Scan Prompt
@@ -93,7 +96,7 @@ The collection is pre-configured with:
 - **Authentication**: API Key in header (`x-pan-token`)
 - **Base URL**: `https://service.api.aisecurity.paloaltonetworks.com`
 - **Content-Type**: `application/json`
-- **Profile Name**: `advancedtest` (used in AI-Runtime Testing folder)
+- **Profile Name**: `{{airs_profile_name}}` (used in AI-Runtime Testing folder)
 
 ### Folder Overview
 

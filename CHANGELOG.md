@@ -9,3 +9,8 @@
 - Examples and documentation
 
 [Unreleased]: https://github.com/scthornton/panw-mcp-claude/commits/main
+
+
+### Modified
+- Added variables for test calls
+- Added 2 MCP tool call examples
