@@ -7,8 +7,11 @@ variables:
   airs_app_name: scott
   airs_app_user: admin
   airs_ai_model: scottai
-  airs_scm_tsg_id: ""
-  scm_access_token: ""
+  scm_tsg_id: "{{placeholder}}"
+  scm_client_id: "{{placeholder}}"
+  scm_client_secret: "{{placeholder}}"
+  scm_access_token: "{{placeholder}}"
+
 auth:
   - id: ca4f3540-f56f-423e-897a-e162136c0ccb
     type: apikey
