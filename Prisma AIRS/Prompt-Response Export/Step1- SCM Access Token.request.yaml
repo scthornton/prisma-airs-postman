@@ -1,0 +1,33 @@
+$kind: http-request
+name: "Step1: SCM Access Token"
+description: "[https://pan.dev/sase/api/auth/post-auth-v-1-oauth-2-access-token/](https://pan.dev/sase/api/auth/post-auth-v-1-oauth-2-access-token/)"
+url: https://auth.apps.paloaltonetworks.com/am/oauth2/access_token
+method: POST
+headers:
+  Accept: application/json
+body:
+  type: urlencoded
+  content:
+    grant_type: client_credentials
+    scope: tsg_id:{{scm_tsg_id}}
+auth:
+  type: basic
+  credentials:
+    username: "{{scm_client_id}}"
+    password: "{{scm_client_secret}}"
+events:
+  - listen: test
+    script:
+      exec:
+        - |
+          // Extract access token from response and save to collection variable
+          var jsonData = pm.response.json();
+
+          if (jsonData.access_token) {
+              pm.collectionVariables.set("scm_access_token", jsonData.access_token);
+              console.log("Access token saved to collection variable: scm_access_token");
+              console.log("Token expires in: " + jsonData.expires_in + " seconds");
+          } else {
+              console.error("No access_token found in response");
+          }
+order: 600008481392
