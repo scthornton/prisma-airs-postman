@@ -1,0 +1,28 @@
+$kind: http-request
+description: "Tests benign content as a baseline. Expected: all detections=false, category=benign, action=allow"
+url: https://service.api.aisecurity.paloaltonetworks.com/v1/scan/sync/request
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "tr_id": "123",
+      "ai_profile": {
+        "profile_name": "{{airs_profile_name}}"
+      },
+      "metadata": {
+        "app_name": "{{airs_app_name}}",
+        "app_user": "{{airs_app_user}}",
+        "ai_model": "{{airs_ai_model}}"
+      },
+      "contents": [
+        {
+          "prompt": "What is the weather like today?",
+          "response": "The weather today is sunny with a high of 75 degrees Fahrenheit."
+        }
+      ]
+    }
+order: 9000

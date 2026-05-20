@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: cac79d42-21da-4c80-8c32-ae1622efe190
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../Prisma AIRS: 35402875-c1ded041-2170-4410-85ec-88d4c95d88b3
+
+localResources:
+  collections:
+    - ../Prisma AIRS

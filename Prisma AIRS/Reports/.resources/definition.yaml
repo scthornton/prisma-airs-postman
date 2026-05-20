@@ -1,0 +1,3 @@
+$kind: collection
+description: These endpoints allow you to retrieve scan results and detailed threat reports for both synchronous and asynchronous scans.
+order: 4000

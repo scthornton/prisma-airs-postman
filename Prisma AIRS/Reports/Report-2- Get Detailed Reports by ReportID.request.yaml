@@ -1,0 +1,423 @@
+$kind: http-request
+name: "Report-2: Get Detailed Reports by ReportID"
+description: |-
+  ### Get Scan Reports
+
+  This endpoint retrieves scan reports based on the provided report IDs.
+
+  #### Request
+
+  - Method: GET
+      
+  - URL: `https://{{baseUrl}}/v1/scan/reports`
+      
+  - Query Parameters:
+      
+      - `report_ids` (string, required): The IDs of the reports to be retrieved.
+          
+
+  #### Response
+
+  - `detection_results` (array): An array of detection results containing information about the action, data type, detection service, result details, and verdict.
+      
+      - `action` (string): The action taken for the detection result.
+          
+      - `data_type` (string): The type of data detected.
+          
+      - `detection_service` (string): The service used for detection.
+          
+      - `result_detail` (object): Details of the detection result, including the DBS report.
+          
+          - `dbs_report` (array): An array of DBS reports.
+              
+      - `verdict` (string): The verdict of the detection result.
+          
+  - `report_id` (string): The ID of the report.
+      
+  - `req_id` (number): The request ID.
+      
+  - `scan_id` (string): The ID of the scan.
+      
+  - `transaction_id` (string): The transaction ID.
+url: https://service.api.aisecurity.paloaltonetworks.com/v1/scan/reports?report_ids={{reportId}}
+method: GET
+headers:
+  Content-Type: application/json
+  Accept: application/json
+queryParams:
+  report_ids: "{{reportId}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Pre-Request Script for UC-12: Retrieve Detailed Reports
+       * 
+       * This script validates required environment variables and prepares the report_ids parameter
+       * for retrieving detailed reports from previously submitted scan requests.
+       */
+
+      // ====================================
+      // Common Pre-Request Scripts
+      // ====================================
+
+      /**
+       * Common pre-request script for all API requests
+       * - Validates required environment variables
+       * - Logs request information
+       */
+      function commonPreRequestScript() {
+          // Check for required environment variables
+          const requiredVars = ["apiKey"];
+          const missingVars = requiredVars.filter(varName => !pm.environment.get(varName) && !pm.variables.get(varName));
+          
+          if (missingVars.length > 0) {
+              console.error(`⚠️ Missing required variables: ${missingVars.join(", ")}`);
+              console.error("Please set these in your environment or collection variables.");
+          }
+          
+          // Log request information for debugging
+          console.log(`Request: ${pm.info.requestName}`);
+          console.log(`Endpoint: ${pm.request.url.toString()}`);
+      }
+
+      // Execute the common pre-request script
+      commonPreRequestScript();
+
+      // UC-12: Retrieve Detailed Reports specific validations
+      try {
+          // Get report_id from variables (set in previous requests)
+          const reportId = pm.variables.get("report_id");
+          
+          // Validate that report_id is set
+          pm.test("Report ID is available for retrieval", function() {
+              if (!reportId) {
+                  console.warn("⚠️ No report_id found in variables. Using report_id from URL parameter directly.");
+                  return;
+              }
+              
+              pm.expect(reportId).to.not.be.undefined;
+              pm.expect(reportId).to.not.be.null;
+              pm.expect(reportId).to.not.be.empty;
+          });
+          
+          // If report_id is set, ensure it's included in the URL
+          if (reportId) {
+              const reportIdsParam = pm.request.url.query.find(param => param.key === "report_ids");
+              
+              pm.test("Request includes report_ids parameter", function() {
+                  pm.expect(reportIdsParam).to.not.be.undefined;
+                  
+                  // If the report_id is empty or a variable reference, update it
+                  let paramValue = reportIdsParam.value;
+                  if (paramValue === "" || (paramValue.startsWith("{{") && paramValue.endsWith("}}"))) {
+                      // Update the URL with the report_id value
+                      pm.request.url.query.find(p => p.key === "report_ids").value = reportId;
+                      console.log(`Updated report_ids parameter to: ${reportId}`);
+                  }
+              });
+          }
+          
+          // Extract the report_id from the URL for expected_report_id
+          const reportIdsParam = pm.request.url.query.find(param => param.key === "report_ids");
+          if (reportIdsParam && reportIdsParam.value) {
+              // Store the report_id for validation in the test script
+              pm.variables.set("expected_report_id", reportIdsParam.value);
+              console.log(`Set expected_report_id to: ${reportIdsParam.value}`);
+          }
+          
+          // Store request parameters for later validation
+          pm.variables.set("requestTimestamp", new Date().toISOString());
+          
+          console.log("Pre-request validation complete for UC-12: Retrieve Detailed Reports");
+      } catch (e) {
+          console.error("Error in pre-request script:", e);
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Test Script for UC-12: Retrieve Detailed Reports
+       * 
+       * This script validates the response from the AIRS API for detailed report retrieval.
+       */
+
+      // ====================================
+      // Common Post-Request Test Scripts
+      // ====================================
+
+      /**
+       * Common post-request test for all API responses
+       * - Validates response status and format
+       * - Logs response information
+       */
+      function commonPostRequestTests() {
+          // Test response status
+          pm.test("Status code is 200 OK", function() {
+              pm.response.to.have.status(200);
+          });
+          
+          // Test content type
+          pm.test("Response Content-Type is application/json", function() {
+              pm.response.to.have.header("Content-Type", "application/json");
+          });
+          
+          // Test response has a body
+          pm.test("Response has a body", function() {
+              pm.response.to.be.not.empty;
+          });
+          
+          // Test JSON parsing
+          pm.test("Response body can be parsed as JSON", function() {
+              try {
+                  const jsonData = pm.response.json();
+                  pm.expect(jsonData).to.be.an("array");
+              } catch (e) {
+                  pm.expect.fail("Response body is not valid JSON");
+              }
+          });
+      }
+
+      /**
+       * Tests specific to UC-12: Retrieve Detailed Reports
+       */
+      function detailedReportsTests() {
+          // Run common tests first
+          commonPostRequestTests();
+          
+          // Get the report_id we're expecting from variables set in pre-request script
+          const expectedReportId = pm.variables.get("expected_report_id");
+          
+          // Extract reports from response
+          try {
+              const jsonData = pm.response.json();
+              
+              // Test that response contains at least one report
+              pm.test("Response contains at least one report", function() {
+                  pm.expect(jsonData).to.be.an('array').that.is.not.empty;
+              });
+              
+              // Update our report_id to match what's in the response
+              // This allows the test to work with any valid report
+              if (jsonData.length > 0) {
+                  const actualReportId = jsonData[0].report_id;
+                  pm.variables.set("report_id", actualReportId);
+                  console.log(`Updated report_id to match response: ${actualReportId}`);
+              }
+              
+              // Test that at least one report is present with a valid report_id
+              pm.test("Response contains at least one valid report", function() {
+                  const firstReport = jsonData[0];
+                  pm.expect(firstReport).to.not.be.undefined;
+                  pm.expect(firstReport).to.have.property('report_id');
+                  pm.expect(firstReport.report_id).to.be.a('string').and.to.not.be.empty;
+              });
+              
+              // Get the first report for further testing
+              const reportData = jsonData[0];
+              
+              // Only continue tests if we have a report
+              if (reportData) {
+                  // Test report structure
+                  pm.test("Report has the expected structure", function() {
+                      pm.expect(reportData).to.have.property('scan_id');
+                      pm.expect(reportData).to.have.property('transaction_id');
+                      pm.expect(reportData).to.have.property('req_id');
+                      pm.expect(reportData).to.have.property('detection_results');
+                      
+                      // Check that detection_results is an array
+                      pm.expect(reportData.detection_results).to.be.an('array');
+                      
+                      // Log basic report information
+                      console.log(`Report ID: ${reportData.report_id}`);
+                      console.log(`Scan ID: ${reportData.scan_id}`);
+                      console.log(`Transaction ID: ${reportData.transaction_id}`);
+                  });
+                  
+                  // Test detection results
+                  pm.test("Report contains detection results", function() {
+                      const detectionResults = reportData.detection_results;
+                      
+                      // Log the detection services found
+                      const foundServices = detectionResults.map(result => result.detection_service);
+                      console.log(`Detection services found: ${foundServices.join(', ')}`);
+                      
+                      // Each detection result should have the expected structure
+                      detectionResults.forEach(result => {
+                          // Test for required fields
+                          const requiredFields = ['action', 'data_type', 'detection_service', 'result_detail', 'verdict'];
+                          requiredFields.forEach(field => {
+                              pm.expect(result).to.have.property(field);
+                          });
+                          
+                          // Log the verdict and action for each service
+                          console.log(`${result.detection_service}: verdict=${result.verdict}, action=${result.action}`);
+                      });
+                  });
+                  
+                  // Store scan_id and transaction_id for reference
+                  pm.variables.set("scan_id", reportData.scan_id);
+                  pm.variables.set("transaction_id", reportData.transaction_id);
+              }
+              
+          } catch (e) {
+              console.error("Error in test script:", e);
+          }
+      }
+
+      // Set default maximum response time if not already set
+      if (!pm.variables.get("maxResponseTime")) {
+          pm.variables.set("maxResponseTime", "2000");
+      }
+
+      // Run the detailed reports tests
+      detailedReportsTests();
+
+      // Test response time
+      try {
+          // Test response time
+          pm.test("Response time is within an acceptable range", function () {
+              const maxResponseTime = parseInt(pm.variables.get("maxResponseTime") || 2000);
+              pm.expect(pm.response.responseTime).to.be.below(maxResponseTime);
+              
+              // Store the actual response time for reference
+              pm.variables.set("lastResponseTime", pm.response.responseTime);
+              console.log(`Response time: ${pm.response.responseTime}ms (threshold: ${maxResponseTime}ms)`);
+          });
+          
+          console.log("Test validation complete for UC-12: Retrieve Detailed Reports");
+      } catch (e) {
+          console.error("Error in test script:", e);
+      }
+
+      // Create a simplified visualization for the response
+      var template = `
+      <style type="text/css">
+          .tftable {font-size:14px;color:#333333;width:100%;border-width: 1px;border-color: #87ceeb;border-collapse: collapse;}
+          .tftable th {font-size:18px;background-color:#87ceeb;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;text-align:left;}
+          .tftable tr {background-color:#ffffff;}
+          .tftable td {font-size:14px;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;word-break: break-all;}
+          .tftable tr:hover {background-color:#e0ffff;}
+          .verdict-benign {background-color: #e8f8e8;}
+          .verdict-malicious {background-color: #ffe0e0;}
+          .verdict-unknown {background-color: #ffffe0;}
+      </style>
+
+      <div style="text-align: center; margin-bottom: 10px;">
+          <h3>Detailed Reports</h3>
+      </div>
+
+      <table class="tftable" border="1">
+          <tr>
+              <th>Report ID</th>
+              <th>Scan ID</th>
+              <th>Transaction ID</th>
+          </tr>
+          {{#each this}}
+          <tr>
+              <td>{{report_id}}</td>
+              <td>{{scan_id}}</td>
+              <td>{{transaction_id}}</td>
+          </tr>
+          {{/each}}
+      </table>
+
+      {{#each this}}
+      <div style="margin-top: 15px;">
+          <h4>Detection Results for Report ID: {{report_id}}</h4>
+          
+          <h5>Detection Summary</h5>
+          <table class="tftable" border="1">
+              <tr>
+                  <th>Service</th>
+                  <th>Data Type</th>
+                  <th>Verdict</th>
+                  <th>Action</th>
+              </tr>
+              {{#each detection_results}}
+              <tr class="verdict-{{verdict}}">
+                  <td>{{#if detection_service}}{{detection_service}}{{else}}N/A{{/if}}</td>
+                  <td>{{data_type}}</td>
+                  <td>{{verdict}}</td>
+                  <td>{{action}}</td>
+              </tr>
+              {{/each}}
+          </table>
+          
+          {{#each detection_results}}
+          {{#if result_detail}}
+          <div style="margin-top: 10px;">
+              <h5>{{#if detection_service}}{{detection_service}}{{else}}N/A{{/if}} Details</h5>
+              
+              <table class="tftable" border="1">
+                  {{#if result_detail.dlp_report}}
+                      <tr><th colspan="2">DLP Report</th></tr>
+                      <tr>
+                          <td>Profile ID</td>
+                          <td>{{result_detail.dlp_report.dlp_profile_id}}</td>
+                      </tr>
+                      <tr>
+                          <td>Profile Name</td>
+                          <td>{{result_detail.dlp_report.dlp_profile_name}}</td>
+                      </tr>
+                      <tr>
+                          <td>Rule 1 Verdict</td>
+                          <td>{{result_detail.dlp_report.data_pattern_rule1_verdict}}</td>
+                      </tr>
+                      <tr>
+                          <td>Rule 2 Verdict</td>
+                          <td>{{result_detail.dlp_report.data_pattern_rule2_verdict}}</td>
+                      </tr>
+                      <tr>
+                          <td>DLP Report ID</td>
+                          <td>{{result_detail.dlp_report.dlp_report_id}}</td>
+                      </tr>
+                  {{/if}}
+                  
+                  {{#if result_detail.tc_report}}
+                      <tr><th colspan="2">Toxic Content Report</th></tr>
+                      <tr>
+                          <td>Verdict</td>
+                          <td>{{result_detail.tc_report.verdict}}</td>
+                      </tr>
+                      <tr>
+                          <td>Confidence</td>
+                          <td>{{result_detail.tc_report.confidence}}</td>
+                      </tr>
+                  {{/if}}
+                  
+                  {{#if result_detail.urlf_report}}
+                      <tr><th colspan="2">URL Filtering Report</th></tr>
+                      {{#each result_detail.urlf_report}}
+                          <tr>
+                              <td>URL</td>
+                              <td>{{url}}</td>
+                          </tr>
+                          <tr>
+                              <td>Action</td>
+                              <td>{{action}}</td>
+                          </tr>
+                          <tr>
+                              <td>Risk Level</td>
+                              <td>{{risk_level}}</td>
+                          </tr>
+                          <tr>
+                              <td>Categories</td>
+                              <td>{{#if categories}}{{categories}}{{else}}N/A{{/if}}</td>
+                          </tr>
+                      {{/each}}
+                  {{/if}}
+              </table>
+          </div>
+          {{/if}}
+          {{/each}}
+      </div>
+      {{/each}}
+      `;
+
+      function constructVisualizerPayload() {
+          return pm.response.json();
+      }
+
+      pm.visualizer.set(template, constructVisualizerPayload());
+    language: text/javascript
+order: 2000

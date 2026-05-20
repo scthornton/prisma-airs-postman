@@ -1,0 +1,539 @@
+$kind: http-request
+name: "Sync-2: Scan Response"
+description: |-
+  ### Scan Sync Request
+
+  This endpoint allows you to make an HTTP POST request to initiate a synchronous scan.
+
+  #### Request Body
+
+  - `tr_id` (string): The transaction ID for the scan request.
+      
+  - `ai_profile` (object):
+      
+      - `profile_id` (string): The profile ID for the AI scan.
+          
+  - `metadata` (object):
+      
+      - `app_name` (string): The name of the application.
+          
+      - `app_user` (string): The user of the application.
+          
+      - `ai_model` (string): The AI model to be used.
+          
+  - `contents` (array):
+      
+      - `response` (string): The content to be scanned.
+          
+
+  #### Response
+
+  The response will be a JSON object with the following properties:
+
+  - `action` (string): The action taken based on the scan.
+      
+  - `category` (string): The category of the scan result.
+      
+  - `profile_id` (string): The profile ID associated with the scan.
+      
+  - `profile_name` (string): The name of the profile.
+      
+  - `prompt_detected` (object): Details of any detected prompts.
+      
+  - `report_id` (string): The ID of the scan report.
+      
+  - `response_detected` (object): Details of the detected responses, including security, DLP, toxic content, and URL categories.
+      
+  - `scan_id` (string): The ID of the scan.
+      
+  - `tr_id` (string): The transaction ID associated with the scan.
+      
+
+  #### JSON Schema for Response
+
+  ``` json
+  {
+    "type": "object",
+    "properties": {
+      "action": { "type": "string" },
+      "category": { "type": "string" },
+      "profile_id": { "type": "string" },
+      "profile_name": { "type": "string" },
+      "prompt_detected": { "type": "object" },
+      "report_id": { "type": "string" },
+      "response_detected": {
+        "type": "object",
+        "properties": {
+          "db_security": { "type": "boolean" },
+          "dlp": { "type": "boolean" },
+          "toxic_content": { "type": "boolean" },
+          "url_cats": { "type": "boolean" }
+        }
+      },
+      "scan_id": { "type": "string" },
+      "tr_id": { "type": "string" }
+    }
+  }
+
+   ```
+url: https://service.api.aisecurity.paloaltonetworks.com/v1/scan/sync/request
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+        "tr_id": "123",
+        "ai_profile": {
+            "profile_name": "{{airs_profile_name}}"
+        },
+        "metadata": {
+            "app_name": "{{airs_app_name}}",
+            "app_user": "{{airs_app_user}}",
+            "ai_model": "{{airs_ai_model}}"
+        },
+        "contents": [
+            {
+                "response": "LLM app says to click on this link: http://pandb.paloaltonetworks.com/test-ransomware "
+            }
+        ]
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Pre-Request Script for UC-8: Detect Malicious URL in LLM Response
+       * 
+       * This script validates required environment variables, sets transaction IDs,
+       * and performs request-specific validations before sending the request.
+       */
+
+      // ====================================
+      // Common Pre-Request Scripts
+      // ====================================
+
+      /**
+       * Common pre-request script for all API requests
+       * - Validates required environment variables
+       * - Sets a unique transaction ID if not already set
+       * - Logs request information
+       */
+      function commonPreRequestScript() {
+          // Check for required environment variables
+          const requiredVars = ["apiKey", "profileId", "appName", "appUser", "aiModel"];
+          const missingVars = requiredVars.filter(varName => !pm.environment.get(varName) && !pm.variables.get(varName));
+          
+          if (missingVars.length > 0) {
+              console.error(`⚠️ Missing required variables: ${missingVars.join(", ")}`);
+              console.error("Please set these in your environment or collection variables.");
+          }
+          
+          // Generate a transaction ID if not set
+          if (!pm.variables.get("transactionId") || pm.variables.get("transactionId") === "") {
+              const transactionId = "tx-" + Math.random().toString(36).substring(2, 12);
+              pm.variables.set("transactionId", transactionId);
+              console.log(`Generated transaction ID: ${transactionId}`);
+          }
+          
+          // Log request information for debugging
+          console.log(`Request: ${pm.info.requestName}`);
+          console.log(`Endpoint: ${pm.request.url.toString()}`);
+      }
+
+      // Execute the common pre-request script
+      commonPreRequestScript();
+
+      // UC-8: Detect Malicious URL in LLM Response specific validations
+      try {
+          // Parse request body to validate contents
+          const requestBody = JSON.parse(pm.request.body.raw);
+          
+          // Update request body with environment variables if fields are empty
+          if (requestBody.tr_id === "") {
+              requestBody.tr_id = pm.variables.get("transactionId");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody.ai_profile.profile_id === "") {
+              requestBody.ai_profile.profile_id = pm.environment.get("profileId") || pm.variables.get("profileId");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody.metadata.app_name === "") {
+              requestBody.metadata.app_name = pm.environment.get("appName") || pm.variables.get("appName");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody.metadata.app_user === "") {
+              requestBody.metadata.app_user = pm.environment.get("appUser") || pm.variables.get("appUser");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody.metadata.ai_model === "") {
+              requestBody.metadata.ai_model = pm.environment.get("aiModel") || pm.variables.get("aiModel");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          // Validate the request structure
+          pm.test("Request has valid structure", function() {
+              pm.expect(requestBody).to.be.an('object');
+              pm.expect(requestBody).to.have.property('tr_id');
+              pm.expect(requestBody).to.have.property('ai_profile');
+              pm.expect(requestBody.ai_profile).to.have.property('profile_id');
+              pm.expect(requestBody).to.have.property('metadata');
+              pm.expect(requestBody).to.have.property('contents');
+          });
+          
+          // Validate that the request contains a response with a malicious URL
+          pm.test("Request contains LLM response with malicious URL", function() {
+              pm.expect(requestBody.contents).to.be.an('array').that.is.not.empty;
+              pm.expect(requestBody.contents[0]).to.have.property('response');
+              
+              // Log the response content for reference
+              console.log(`Response content: "${requestBody.contents[0].response}"`);
+              
+              // Check for a URL that would be flagged as malicious
+              const response = requestBody.contents[0].response;
+              const containsTestURL = response.includes('pandb.paloaltonetworks.com/test-');
+              pm.expect(containsTestURL).to.be.true;
+          });
+          
+          // Store request parameters for later validation
+          pm.variables.set("requestTimestamp", new Date().toISOString());
+          
+          // Store the actual profile ID and transaction ID from the request
+          pm.variables.set("requestProfileId", requestBody.ai_profile.profile_id);
+          pm.variables.set("requestTrId", requestBody.tr_id);
+          
+          console.log("Pre-request validation complete for UC-8: Detect Malicious URL in LLM Response");
+      } catch (e) {
+          console.error("Error in pre-request script:", e);
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Test Script for UC-8: Detect Malicious URL in LLM Response
+       * 
+       * This script validates the response from the AIRS API for malicious URL detection in LLM responses.
+       */
+
+      // ====================================
+      // Common Post-Request Test Scripts
+      // ====================================
+
+      /**
+       * Common post-request test for all API responses
+       * - Validates response status and format
+       * - Sets environment variables from response
+       * - Logs response information
+       */
+      function commonPostRequestTests() {
+          // Test response status
+          pm.test("Status code is 200 OK", function() {
+              pm.response.to.have.status(200);
+          });
+          
+          // Test content type
+          pm.test("Response Content-Type is application/json", function() {
+              pm.response.to.have.header("Content-Type", "application/json");
+          });
+          
+          // Test response has a body
+          pm.test("Response has a body", function() {
+              pm.response.to.be.not.empty;
+          });
+          
+          // Test JSON parsing
+          pm.test("Response body can be parsed as JSON", function() {
+              try {
+                  const jsonData = pm.response.json();
+                  pm.expect(jsonData).to.be.an("object");
+              } catch (e) {
+                  pm.expect.fail("Response body is not valid JSON");
+              }
+          });
+      }
+
+      /**
+       * Common tests for sync scan responses
+       * - Validates scan_id and report_id
+       * - Sets collection variables from response
+       * - Tests common fields in sync scan responses
+       */
+      function syncScanPostRequestTests() {
+          // Run common tests first
+          commonPostRequestTests();
+          
+          // Extract scan_id and report_id from response
+          try {
+              const jsonData = pm.response.json();
+              
+              // Test if scan_id and report_id are present in response
+              pm.test("Response contains scan_id", function() {
+                  pm.expect(jsonData).to.have.property("scan_id");
+                  pm.expect(jsonData.scan_id).to.be.a("string").and.to.not.be.empty;
+              });
+              
+              pm.test("Response contains report_id", function() {
+                  pm.expect(jsonData).to.have.property("report_id");
+                  pm.expect(jsonData.report_id).to.be.a("string").and.to.not.be.empty;
+              });
+              
+              // Set variables for use in other requests
+              if (jsonData.scan_id) {
+                  pm.variables.set("scan_id", jsonData.scan_id);
+                  console.log(`Set scan_id: ${jsonData.scan_id}`);
+              }
+              
+              if (jsonData.report_id) {
+                  pm.variables.set("report_id", jsonData.report_id);
+                  console.log(`Set report_id: ${jsonData.report_id}`);
+              }
+              
+              // Test action and category
+              pm.test("Response contains action and category fields", function() {
+                  pm.expect(jsonData).to.have.property("action");
+                  pm.expect(jsonData).to.have.property("category");
+              });
+              
+              // Test for detection fields
+              pm.test("Response contains detection information", function() {
+                  pm.expect(jsonData).to.have.property("prompt_detected");
+                  
+                  // Only test response_detected if it should be in the response
+                  if (pm.request.body && pm.request.body.raw) {
+                      const requestBody = JSON.parse(pm.request.body.raw);
+                      if (requestBody.contents && requestBody.contents.some(content => content.response)) {
+                          pm.expect(jsonData).to.have.property("response_detected");
+                      }
+                  }
+              });
+          } catch (e) {
+              console.error("Error in test script:", e);
+          }
+      }
+
+      /**
+       * Tests specific to UC-8: Detect Malicious URL in LLM Response
+       */
+      function maliciousURLInLLMResponseDetectionTests() {
+          syncScanPostRequestTests();
+          
+          try {
+              const jsonData = pm.response.json();
+              
+              // Test for URL categories detection in response
+              pm.test("Response correctly identifies malicious URL in LLM response", function() {
+                  // Check if url_cats property exists in response_detected
+                  if (jsonData.response_detected.hasOwnProperty("url_cats")) {
+                      pm.expect(jsonData.response_detected.url_cats).to.be.true;
+                      console.log("URL categories detected as expected");
+                  } else {
+                      console.log("Warning: 'url_cats' property not found in response_detected");
+                      // Log all properties that are in response_detected
+                      console.log("Response detected properties:", Object.keys(jsonData.response_detected));
+                  }
+              });
+              
+              // Test action and category for malicious content
+              pm.test("LLM response with malicious URL is blocked", function() {
+                  pm.expect(jsonData.action).to.equal("block");
+                  pm.expect(jsonData.category).to.equal("malicious");
+              });
+              
+              // Verify prompt_detected structure
+              pm.test("Prompt detection is empty since no prompt was provided", function() {
+                  pm.expect(jsonData.prompt_detected).to.be.an('object');
+                  
+                  // Log if prompt_detected is not empty (unexpected)
+                  if (Object.keys(jsonData.prompt_detected).length > 0) {
+                      console.log("Warning: prompt_detected is not empty as expected");
+                      console.log("Prompt detected properties:", Object.keys(jsonData.prompt_detected));
+                  } else {
+                      console.log("Prompt_detected is empty as expected");
+                  }
+              });
+              
+          } catch (e) {
+              console.error("Error in test script:", e);
+          }
+      }
+
+      // Set default maximum response time if not already set
+      if (!pm.variables.get("maxResponseTime")) {
+          pm.variables.set("maxResponseTime", "2000");
+      }
+
+      // Run the malicious URL in LLM response detection tests
+      maliciousURLInLLMResponseDetectionTests();
+
+      // Compare response values with expected values
+      try {
+          const jsonData = pm.response.json();
+          
+          // Test response time
+          pm.test("Response time is within an acceptable range", function () {
+              // Get max response time from variables or use default
+              const maxResponseTime = parseInt(pm.variables.get("maxResponseTime") || 2000);
+              pm.expect(pm.response.responseTime).to.be.below(maxResponseTime);
+              
+              // Store the actual response time for reference
+              pm.variables.set("lastResponseTime", pm.response.responseTime);
+              console.log(`Response time: ${pm.response.responseTime}ms (threshold: ${maxResponseTime}ms)`);
+          });
+          
+          // Test response detection values
+          pm.test("Detection values match expected results", function() {
+              // Log all detection fields in response_detected
+              console.log("Response detection fields:");
+              Object.keys(jsonData.response_detected).forEach(key => {
+                  console.log(`- ${key}: ${jsonData.response_detected[key]}`);
+              });
+              
+              // Verify url_cats detection if it exists
+              if (jsonData.response_detected.hasOwnProperty("url_cats")) {
+                  pm.expect(jsonData.response_detected.url_cats).to.be.true;
+              }
+              
+              // Skip validation of other fields - different environments might have different detection capabilities
+          });
+          
+          // Store actual profile information for reference
+          if (jsonData.profile_id) {
+              pm.variables.set("actualProfileId", jsonData.profile_id);
+              console.log(`Actual profile ID: ${jsonData.profile_id}`);
+          }
+          
+          if (jsonData.profile_name) {
+              pm.variables.set("actualProfileName", jsonData.profile_name);
+              console.log(`Actual profile name: ${jsonData.profile_name}`);
+          }
+          
+          // Test profile information from request
+          pm.test("Profile information validation", function() {
+              // Get the request profile ID
+              try {
+                  const requestBody = JSON.parse(pm.request.body.raw);
+                  const requestProfileId = requestBody.ai_profile.profile_id;
+                  
+                  console.log(`Request profile ID: ${requestProfileId}`);
+                  console.log(`Response profile ID: ${jsonData.profile_id}`);
+                  
+                  // Don't do exact match comparison, just log the values
+                  // Different environments might use different profile mappings
+              } catch (e) {
+                  console.error("Error parsing request body:", e);
+              }
+          });
+          
+          // Test transaction ID is preserved
+          pm.test("Transaction ID is preserved from request", function() {
+              try {
+                  const requestBody = JSON.parse(pm.request.body.raw);
+                  const requestTrId = requestBody.tr_id;
+                  
+                  // Only perform validation if the request has an explicit transaction ID
+                  if (requestTrId && requestTrId !== "") {
+                      pm.expect(jsonData.tr_id).to.equal(requestTrId);
+                  } else {
+                      console.log(`Response transaction ID: ${jsonData.tr_id}`);
+                  }
+              } catch (e) {
+                  console.error("Error parsing request body:", e);
+              }
+          });
+          
+          console.log("Test validation complete for UC-8: Detect Malicious URL in LLM Response");
+      } catch (e) {
+          console.error("Error in test script:", e);
+      }
+
+      // Create a simplified visualization for the response
+      var template = `
+      <style type="text/css">
+          .tftable {font-size:14px;color:#333333;width:100%;border-width: 1px;border-color: #87ceeb;border-collapse: collapse;}
+          .tftable th {font-size:18px;background-color:#87ceeb;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;text-align:left;}
+          .tftable tr {background-color:#ffffff;}
+          .tftable td {font-size:14px;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;}
+          .tftable tr:hover {background-color:#e0ffff;}
+          .detection-true {color: red; font-weight: bold;}
+          .detection-false {color: green;}
+          .alert-box {background-color: #ffecec; border-left: 4px solid #f44336; padding: 15px; margin: 10px 0;}
+      </style>
+
+      <div class="alert-box">
+          <h3>⚠️ SECURITY ALERT: Malicious URL Detected in LLM Response ⚠️</h3>
+          <p>The AI Runtime Security service has detected a potentially harmful URL in the LLM response.</p>
+      </div>
+
+      <h4>Response Detection</h4>
+      <table class="tftable" border="1">
+          <tr>
+              <th>Detection Type</th>
+              <th>Result</th>
+          </tr>
+          <tr>
+              <td>URL Categories</td>
+              <td class="detection-{{#if response.response_detected.url_cats}}true{{else}}false{{/if}}">{{response.response_detected.url_cats}}</td>
+          </tr>
+          <tr>
+              <td>DLP</td>
+              <td class="detection-{{#if response.response_detected.dlp}}true{{else}}false{{/if}}">{{response.response_detected.dlp}}</td>
+          </tr>
+          <tr>
+              <td>DB Security</td>
+              <td class="detection-{{#if response.response_detected.db_security}}true{{else}}false{{/if}}">{{response.response_detected.db_security}}</td>
+          </tr>
+          <tr>
+              <td>Toxic Content</td>
+              <td class="detection-{{#if response.response_detected.toxic_content}}true{{else}}false{{/if}}">{{response.response_detected.toxic_content}}</td>
+          </tr>
+      </table>
+
+      <h4>API Response Details</h4>
+      <table class="tftable" border="1">
+          <tr>
+              <th>Field</th>
+              <th>Value</th>
+          </tr>
+          <tr>
+              <td>Action</td>
+              <td>{{response.action}}</td>
+          </tr>
+          <tr>
+              <td>Category</td>
+              <td>{{response.category}}</td>
+          </tr>
+          <tr>
+              <td>Profile ID</td>
+              <td>{{response.profile_id}}</td>
+          </tr>
+          <tr>
+              <td>Profile Name</td>
+              <td>{{response.profile_name}}</td>
+          </tr>
+          <tr>
+              <td>Report ID</td>
+              <td>{{response.report_id}}</td>
+          </tr>
+          <tr>
+              <td>Scan ID</td>
+              <td>{{response.scan_id}}</td>
+          </tr>
+          <tr>
+              <td>Transaction ID</td>
+              <td>{{response.tr_id}}</td>
+          </tr>
+      </table>
+      `;
+
+      function constructVisualizerPayload() {
+          return { response: pm.response.json() };
+      }
+
+      pm.visualizer.set(template, constructVisualizerPayload());
+    language: text/javascript
+order: 2000

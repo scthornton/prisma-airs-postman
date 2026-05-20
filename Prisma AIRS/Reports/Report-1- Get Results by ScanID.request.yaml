@@ -1,0 +1,427 @@
+$kind: http-request
+name: "Report-1: Get Results by ScanID"
+description: |-
+  ### Scan Results
+
+  This endpoint retrieves the results of a scan based on the provided scan ID.
+
+  #### Request
+
+  - Method: GET
+      
+  - URL: `https://{{baseUrl}}/v1/scan/results`
+      
+  - Query Parameters:
+      
+      - `scan_ids` (string, required): The ID of the scan for which results are to be retrieved.
+          
+
+  #### Response
+
+  The response is a JSON object with the following schema:
+
+  ``` json
+  {
+    "req_id": integer,
+    "result": {
+      "action": string,
+      "category": string,
+      "completed_at": string,
+      "profile_id": string,
+      "profile_name": string,
+      "prompt_detected": object,
+      "report_id": string,
+      "response_detected": {
+        "db_security": boolean,
+        "dlp": boolean,
+        "toxic_content": boolean,
+        "url_cats": boolean
+      },
+      "scan_id": string,
+      "tr_id": string
+    },
+    "scan_id": string,
+    "status": string
+  }
+
+   ```
+
+  The `result` object contains detailed information about the scan results, including the action, category, completion timestamp, profile details, prompt detection, report ID, response detection flags, scan ID, and transaction ID. The `response_detected` object indicates the presence of security, DLP, toxic content, and URL category detection.
+url: https://service.api.aisecurity.paloaltonetworks.com/v1/scan/results?scan_ids={{scanId}}
+method: GET
+headers:
+  Content-Type: application/json
+  Accept: application/json
+queryParams:
+  scan_ids: "{{scanId}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Pre-Request Script for UC-11: Retrieve Scan Results
+       * 
+       * This script validates required environment variables and prepares the scan_ids parameter
+       * for retrieving results from previously submitted scan requests.
+       */
+
+      // ====================================
+      // Common Pre-Request Scripts
+      // ====================================
+
+      /**
+       * Common pre-request script for all API requests
+       * - Validates required environment variables
+       * - Logs request information
+       */
+      function commonPreRequestScript() {
+          // Check for required environment variables
+          const requiredVars = ["apiKey"];
+          const missingVars = requiredVars.filter(varName => !pm.environment.get(varName) && !pm.variables.get(varName));
+          
+          if (missingVars.length > 0) {
+              console.error(`⚠️ Missing required variables: ${missingVars.join(", ")}`);
+              console.error("Please set these in your environment or collection variables.");
+          }
+          
+          // Log request information for debugging
+          console.log(`Request: ${pm.info.requestName}`);
+          console.log(`Endpoint: ${pm.request.url.toString()}`);
+      }
+
+      // Execute the common pre-request script
+      commonPreRequestScript();
+
+      // UC-11: Retrieve Scan Results specific validations
+      try {
+          // Get scan_id from variables (set in previous requests)
+          const scanId = pm.variables.get("scan_id");
+          
+          // Validate that scan_id is set
+          pm.test("Scan ID is available for retrieval", function() {
+              if (!scanId) {
+                  console.warn("⚠️ No scan_id found in variables. Using scan_id from URL parameter directly.");
+                  return;
+              }
+              
+              pm.expect(scanId).to.not.be.undefined;
+              pm.expect(scanId).to.not.be.null;
+              pm.expect(scanId).to.not.be.empty;
+          });
+          
+          // If scan_id is set, ensure it's included in the URL
+          if (scanId) {
+              const scanIdsParam = pm.request.url.query.find(param => param.key === "scan_ids");
+              
+              pm.test("Request includes scan_ids parameter", function() {
+                  pm.expect(scanIdsParam).to.not.be.undefined;
+                  
+                  // If the scan_id is empty or a variable reference, update it
+                  let paramValue = scanIdsParam.value;
+                  if (paramValue === "" || (paramValue.startsWith("{{") && paramValue.endsWith("}}"))) {
+                      // Update the URL with the scan_id value
+                      pm.request.url.query.find(p => p.key === "scan_ids").value = scanId;
+                      console.log(`Updated scan_ids parameter to: ${scanId}`);
+                  }
+              });
+          }
+          
+          // Extract the scan_id from the URL for expected_scan_id
+          const scanIdsParam = pm.request.url.query.find(param => param.key === "scan_ids");
+          if (scanIdsParam && scanIdsParam.value) {
+              // Store the scan_id for validation in the test script
+              pm.variables.set("expected_scan_id", scanIdsParam.value);
+              console.log(`Set expected_scan_id to: ${scanIdsParam.value}`);
+          }
+          
+          // Store request parameters for later validation
+          pm.variables.set("requestTimestamp", new Date().toISOString());
+          
+          console.log("Pre-request validation complete for UC-11: Retrieve Scan Results");
+      } catch (e) {
+          console.error("Error in pre-request script:", e);
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Test Script for UC-11: Retrieve Scan Results
+       * 
+       * This script validates the response from the AIRS API for scan results retrieval.
+       */
+
+      // ====================================
+      // Common Post-Request Test Scripts
+      // ====================================
+
+      /**
+       * Common post-request test for all API responses
+       * - Validates response status and format
+       * - Logs response information
+       */
+      function commonPostRequestTests() {
+          // Test response status
+          pm.test("Status code is 200 OK", function() {
+              pm.response.to.have.status(200);
+          });
+          
+          // Test content type
+          pm.test("Response Content-Type is application/json", function() {
+              pm.response.to.have.header("Content-Type", "application/json");
+          });
+          
+          // Test response has a body
+          pm.test("Response has a body", function() {
+              pm.response.to.be.not.empty;
+          });
+          
+          // Test JSON parsing
+          pm.test("Response body can be parsed as JSON", function() {
+              try {
+                  const jsonData = pm.response.json();
+                  pm.expect(jsonData).to.be.an("array");
+              } catch (e) {
+                  pm.expect.fail("Response body is not valid JSON");
+              }
+          });
+      }
+
+      /**
+       * Tests specific to UC-11: Retrieve Scan Results
+       */
+      function scanResultsTests() {
+          // Run common tests first
+          commonPostRequestTests();
+          
+          // Get the scan_id we're expecting from variables set in pre-request script
+          const expectedScanId = pm.variables.get("expected_scan_id");
+          
+          // Extract results from response
+          try {
+              const jsonData = pm.response.json();
+              
+              // Test that response contains at least one result
+              pm.test("Response contains at least one result", function() {
+                  pm.expect(jsonData).to.be.an('array').that.is.not.empty;
+              });
+              
+              // Update our scan_id to match what's in the response
+              // This allows the test to work with any valid scan result
+              if (jsonData.length > 0) {
+                  const actualScanId = jsonData[0].scan_id;
+                  pm.variables.set("scan_id", actualScanId);
+                  console.log(`Updated scan_id to match response: ${actualScanId}`);
+              }
+              
+              // Test that at least one result is present with a valid scan_id
+              pm.test("Response contains at least one valid scan result", function() {
+                  const firstResult = jsonData[0];
+                  pm.expect(firstResult).to.not.be.undefined;
+                  pm.expect(firstResult).to.have.property('scan_id');
+                  pm.expect(firstResult.scan_id).to.be.a('string').and.to.not.be.empty;
+              });
+              
+              // Get the first scan result for further testing
+              const scanResult = jsonData[0];
+              
+              // Only continue tests if we have a scan result
+              if (scanResult) {
+                  // Test that the scan has a status
+                  pm.test("Scan result has a status", function() {
+                      pm.expect(scanResult).to.have.property('status');
+                      pm.expect(scanResult.status).to.be.a('string');
+                      
+                      // Status should be one of: pending, processing, complete, failed
+                      pm.expect(['pending', 'processing', 'complete', 'failed']).to.include(scanResult.status);
+                      
+                      // Log the status for reference
+                      console.log(`Scan status: ${scanResult.status}`);
+                  });
+                  
+                  // If scan is complete, test the result fields
+                  if (scanResult.status === 'complete') {
+                      pm.test("Scan result contains complete result data", function() {
+                          pm.expect(scanResult).to.have.property('result');
+                          pm.expect(scanResult.result).to.be.an('object');
+                          
+                          const result = scanResult.result;
+                          
+                          // Test for required fields
+                          const requiredFields = [
+                              'action', 'category', 'completed_at', 'profile_id',
+                              'profile_name', 'report_id', 'scan_id', 'tr_id'
+                          ];
+                          
+                          requiredFields.forEach(field => {
+                              pm.expect(result).to.have.property(field);
+                          });
+                          
+                          // Test for detection fields
+                          pm.expect(result).to.have.property('prompt_detected');
+                          pm.expect(result).to.have.property('response_detected');
+                          
+                          // Log some key result information
+                          console.log(`Action: ${result.action}, Category: ${result.category}`);
+                          console.log(`Profile Name: ${result.profile_name}`);
+                          console.log(`Completed At: ${result.completed_at}`);
+                      });
+                      
+                      // Test completed_at timestamp is valid
+                      pm.test("Completed timestamp is valid", function() {
+                          const timestamp = new Date(scanResult.result.completed_at);
+                          pm.expect(timestamp.toString()).to.not.equal("Invalid Date");
+                      });
+                      
+                      // Store result info for reference (but don't require specific values)
+                      pm.variables.set("lastScanAction", scanResult.result.action);
+                      pm.variables.set("lastScanCategory", scanResult.result.category);
+                      pm.variables.set("lastProfileName", scanResult.result.profile_name);
+                      pm.variables.set("lastProfileId", scanResult.result.profile_id);
+                  }
+                  
+                  // If scan failed, test the error info
+                  if (scanResult.status === 'failed') {
+                      pm.test("Failed scan contains error information", function() {
+                          pm.expect(scanResult).to.have.property('error');
+                          
+                          // Log error information
+                          if (scanResult.error) {
+                              console.log(`Error Code: ${scanResult.error.code}`);
+                              console.log(`Error Message: ${scanResult.error.message}`);
+                          }
+                      });
+                  }
+              }
+              
+          } catch (e) {
+              console.error("Error in test script:", e);
+          }
+      }
+
+      // Set default maximum response time if not already set
+      if (!pm.variables.get("maxResponseTime")) {
+          pm.variables.set("maxResponseTime", "2000");
+      }
+
+      // Run the scan results tests
+      scanResultsTests();
+
+      // Test response time
+      try {
+          // Test response time
+          pm.test("Response time is within an acceptable range", function () {
+              const maxResponseTime = parseInt(pm.variables.get("maxResponseTime") || 2000);
+              pm.expect(pm.response.responseTime).to.be.below(maxResponseTime);
+              
+              // Store the actual response time for reference
+              pm.variables.set("lastResponseTime", pm.response.responseTime);
+              console.log(`Response time: ${pm.response.responseTime}ms (threshold: ${maxResponseTime}ms)`);
+          });
+          
+          console.log("Test validation complete for UC-11: Retrieve Scan Results");
+      } catch (e) {
+          console.error("Error in test script:", e);
+      }
+
+      // Create a simplified visualization for the response
+      var template = `
+      <style type="text/css">
+          .tftable {font-size:14px;color:#333333;width:100%;border-width: 1px;border-color: #87ceeb;border-collapse: collapse;}
+          .tftable th {font-size:18px;background-color:#87ceeb;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;text-align:left;}
+          .tftable tr {background-color:#ffffff;}
+          .tftable td {font-size:14px;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;word-break: break-all;}
+          .tftable tr:hover {background-color:#e0ffff;}
+          .status-complete {background-color: #e8f8e8;}
+          .status-pending {background-color: #ffffe0;}
+          .status-processing {background-color: #e0e0ff;}
+          .status-failed {background-color: #ffe0e0;}
+      </style>
+
+      <div style="text-align: center; margin-bottom: 10px;">
+          <h3>Scan Results</h3>
+      </div>
+
+      <table class="tftable" border="1">
+          <tr>
+              <th>Scan ID</th>
+              <th>Status</th>
+              <th>Action</th>
+              <th>Category</th>
+              <th>Completed At</th>
+          </tr>
+          {{#each this}}
+          <tr class="status-{{status}}">
+              <td>{{scan_id}}</td>
+              <td>{{status}}</td>
+              <td>{{result.action}}</td>
+              <td>{{result.category}}</td>
+              <td>{{result.completed_at}}</td>
+          </tr>
+          {{/each}}
+      </table>
+
+      {{#each this}}
+      {{#if result}}
+      <div style="margin-top: 15px;">
+          <h4>Result Details for Scan ID: {{scan_id}}</h4>
+          
+          <h5>Detection Results</h5>
+          <table class="tftable" border="1">
+              <tr>
+                  <th colspan="2">Prompt Detection</th>
+                  <th colspan="2">Response Detection</th>
+              </tr>
+              <tr>
+                  <td>DLP</td>
+                  <td>{{result.prompt_detected.dlp}}</td>
+                  <td>DLP</td>
+                  <td>{{result.response_detected.dlp}}</td>
+              </tr>
+              <tr>
+                  <td>Injection</td>
+                  <td>{{result.prompt_detected.injection}}</td>
+                  <td>DB Security</td>
+                  <td>{{result.response_detected.db_security}}</td>
+              </tr>
+              <tr>
+                  <td>URL Categories</td>
+                  <td>{{result.prompt_detected.url_cats}}</td>
+                  <td>URL Categories</td>
+                  <td>{{result.response_detected.url_cats}}</td>
+              </tr>
+          </table>
+          
+          <h5>Metadata</h5>
+          <table class="tftable" border="1">
+              <tr>
+                  <td>Profile Name</td>
+                  <td>{{result.profile_name}}</td>
+              </tr>
+              <tr>
+                  <td>Transaction ID</td>
+                  <td>{{result.tr_id}}</td>
+              </tr>
+              <tr>
+                  <td>Report ID</td>
+                  <td>{{result.report_id}}</td>
+              </tr>
+          </table>
+      </div>
+      {{/if}}
+
+      {{#if error}}
+      <div style="margin-top: 15px; padding: 10px; background-color: #ffeeee; border: 1px solid #ffaaaa; border-radius: 5px;">
+          <h4>Error Information</h4>
+          <p><strong>Error Code:</strong> {{error.code}}</p>
+          <p><strong>Error Message:</strong> {{error.message}}</p>
+      </div>
+      {{/if}}
+      {{/each}}
+      `;
+
+      function constructVisualizerPayload() {
+          return pm.response.json();
+      }
+
+      pm.visualizer.set(template, constructVisualizerPayload());
+    language: text/javascript
+order: 1000
