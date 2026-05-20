@@ -1,0 +1,358 @@
+$kind: http-request
+name: "Async-1: Scan Prompt"
+description: |-
+  ### Scan Async Request
+
+  This endpoint allows you to submit a scan request asynchronously.
+
+  #### Request Body
+
+  - `req_id` (Number): The request ID.
+      
+  - `tr_id` (String): The transaction ID.
+      
+  - `profile_id` (String): The AI profile ID.
+      
+  - `app_name` (String): The name of the application.
+      
+  - `app_user` (String): The user of the application.
+      
+  - `ai_model` (String): The AI model.
+      
+  - `prompt` (String): The content to be scanned.
+      
+
+  #### Response
+
+  - `received` (String): Indicates if the request was received.
+      
+  - `report_id` (String): The ID of the generated report.
+      
+  - `scan_id` (String): The ID of the scan.
+      
+
+  Example:
+
+  ``` json
+  {
+      "received": "",
+      "report_id": "",
+      "scan_id": ""
+  }
+
+   ```
+url: https://service.api.aisecurity.paloaltonetworks.com/v1/scan/async/request
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    [
+      {
+        "req_id": 0,
+        "scan_req": {
+              "ai_profile": {
+            "profile_name": "{{airs_profile_name}}"
+        },
+        "metadata": {
+            "app_name": "{{airs_app_name}}",
+            "app_user": "{{airs_app_user}}",
+            "ai_model": "{{airs_ai_model}}"
+        },
+          "contents": [
+            {
+              "prompt": "my ip address is 192.168.86.123"
+            }
+          ]
+        }
+      }
+    ]
+scripts:
+  - type: beforeRequest
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Pre-Request Script for UC-9: Async Detect PII in Prompt
+       * 
+       * This script validates required environment variables, sets transaction IDs,
+       * and performs request-specific validations before sending the async request.
+       */
+
+      // ====================================
+      // Common Pre-Request Scripts
+      // ====================================
+
+      /**
+       * Common pre-request script for all API requests
+       * - Validates required environment variables
+       * - Sets a unique transaction ID if not already set
+       * - Logs request information
+       */
+      function commonPreRequestScript() {
+          // Check for required environment variables
+          const requiredVars = ["apiKey", "profileId", "appName", "appUser", "aiModel"];
+          const missingVars = requiredVars.filter(varName => !pm.environment.get(varName) && !pm.variables.get(varName));
+          
+          if (missingVars.length > 0) {
+              console.error(`⚠️ Missing required variables: ${missingVars.join(", ")}`);
+              console.error("Please set these in your environment or collection variables.");
+          }
+          
+          // Generate a transaction ID if not set
+          if (!pm.variables.get("transactionId") || pm.variables.get("transactionId") === "") {
+              const transactionId = "tx-" + Math.random().toString(36).substring(2, 12);
+              pm.variables.set("transactionId", transactionId);
+              console.log(`Generated transaction ID: ${transactionId}`);
+          }
+          
+          // Log request information for debugging
+          console.log(`Request: ${pm.info.requestName}`);
+          console.log(`Endpoint: ${pm.request.url.toString()}`);
+      }
+
+      // Execute the common pre-request script
+      commonPreRequestScript();
+
+      // UC-9: Async Detect PII in Prompt specific validations
+      try {
+          // Parse request body to validate contents
+          const requestBody = JSON.parse(pm.request.body.raw);
+          
+          // Update request body with environment variables if fields are empty
+          if (requestBody[0].scan_req.tr_id === "") {
+              requestBody[0].scan_req.tr_id = pm.variables.get("transactionId");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody[0].scan_req.ai_profile.profile_id === "") {
+              requestBody[0].scan_req.ai_profile.profile_id = pm.environment.get("profileId") || pm.variables.get("profileId");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody[0].scan_req.metadata.app_name === "") {
+              requestBody[0].scan_req.metadata.app_name = pm.environment.get("appName") || pm.variables.get("appName");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody[0].scan_req.metadata.app_user === "") {
+              requestBody[0].scan_req.metadata.app_user = pm.environment.get("appUser") || pm.variables.get("appUser");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          if (requestBody[0].scan_req.metadata.ai_model === "") {
+              requestBody[0].scan_req.metadata.ai_model = pm.environment.get("aiModel") || pm.variables.get("aiModel");
+              pm.request.body.update(JSON.stringify(requestBody, null, 4));
+          }
+          
+          // Validate the request structure for async scan
+          pm.test("Async request has valid structure", function() {
+              pm.expect(requestBody).to.be.an('array').that.is.not.empty;
+              pm.expect(requestBody[0]).to.have.property('req_id');
+              pm.expect(requestBody[0]).to.have.property('scan_req');
+              
+              const scanReq = requestBody[0].scan_req;
+              pm.expect(scanReq).to.have.property('tr_id');
+              pm.expect(scanReq).to.have.property('ai_profile');
+              pm.expect(scanReq.ai_profile).to.have.property('profile_id');
+              pm.expect(scanReq).to.have.property('metadata');
+              pm.expect(scanReq).to.have.property('contents');
+          });
+          
+          // Validate that the request contains a prompt with PII
+          pm.test("Request contains prompt with PII data", function() {
+              const scanReq = requestBody[0].scan_req;
+              pm.expect(scanReq.contents).to.be.an('array').that.is.not.empty;
+              pm.expect(scanReq.contents[0]).to.have.property('prompt');
+              
+              // Log the prompt content for reference
+              console.log(`Prompt content: "${scanReq.contents[0].prompt}"`);
+              
+              // Check for PII data in the prompt (IP address, SSN, credit card, etc.)
+              const prompt = scanReq.contents[0].prompt.toLowerCase();
+              const containsPII = prompt.includes('ip address') || 
+                                  prompt.includes('ssn') || 
+                                  prompt.includes('social security') || 
+                                  prompt.includes('credit card') || 
+                                  prompt.includes('address') || 
+                                  prompt.includes('password') || 
+                                  prompt.includes('phone number') || 
+                                  /\b\d{3}-\d{2}-\d{4}\b/.test(prompt) || // SSN pattern
+                                  /\b\d{16}\b/.test(prompt) || // Credit card pattern
+                                  /\b\d{3}.\d{3}.\d{4}\b/.test(prompt); // Phone number pattern
+              
+              pm.expect(containsPII).to.be.true;
+          });
+          
+          // Store request parameters for later validation
+          pm.variables.set("requestTimestamp", new Date().toISOString());
+          
+          // Store the actual profile ID and transaction ID from the request
+          pm.variables.set("requestProfileId", requestBody[0].scan_req.ai_profile.profile_id);
+          pm.variables.set("requestTrId", requestBody[0].scan_req.tr_id);
+          
+          console.log("Pre-request validation complete for UC-9: Async Detect PII in Prompt");
+      } catch (e) {
+          console.error("Error in pre-request script:", e);
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      /**
+       * Palo Alto Networks AIRS API Test Scripts - Test Script for UC-9: Async Detect PII in Prompt
+       * 
+       * This script validates the response from the AIRS API for async PII detection.
+       */
+
+      // ====================================
+      // Common Post-Request Test Scripts
+      // ====================================
+
+      /**
+       * Common post-request test for all API responses
+       * - Validates response status and format
+       * - Sets environment variables from response
+       * - Logs response information
+       */
+      function commonPostRequestTests() {
+          // Test response status
+          pm.test("Status code is 200 OK", function() {
+              pm.response.to.have.status(200);
+          });
+          
+          // Test content type
+          pm.test("Response Content-Type is application/json", function() {
+              pm.response.to.have.header("Content-Type", "application/json");
+          });
+          
+          // Test response has a body
+          pm.test("Response has a body", function() {
+              pm.response.to.be.not.empty;
+          });
+          
+          // Test JSON parsing
+          pm.test("Response body can be parsed as JSON", function() {
+              try {
+                  const jsonData = pm.response.json();
+                  pm.expect(jsonData).to.be.an("object");
+              } catch (e) {
+                  pm.expect.fail("Response body is not valid JSON");
+              }
+          });
+      }
+
+      /**
+       * Tests specific to UC-9: Async Detect PII in Prompt
+       */
+      function asyncScanRequestTests() {
+          // Run common tests first
+          commonPostRequestTests();
+          
+          // Extract scan_id and report_id from response
+          try {
+              const jsonData = pm.response.json();
+              
+              // Test if scan_id and report_id are present in response
+              pm.test("Async response contains scan_id", function() {
+                  pm.expect(jsonData).to.have.property("scan_id");
+                  pm.expect(jsonData.scan_id).to.be.a("string").and.to.not.be.empty;
+              });
+              
+              pm.test("Async response contains report_id", function() {
+                  pm.expect(jsonData).to.have.property("report_id");
+                  pm.expect(jsonData.report_id).to.be.a("string").and.to.not.be.empty;
+              });
+              
+              // Test received timestamp is present
+              pm.test("Async response contains received timestamp", function() {
+                  pm.expect(jsonData).to.have.property("received");
+                  pm.expect(jsonData.received).to.be.a("string").and.to.not.be.empty;
+                  
+                  // Validate timestamp format (ISO 8601)
+                  const timestamp = new Date(jsonData.received);
+                  pm.expect(timestamp.toString()).to.not.equal("Invalid Date");
+              });
+              
+              // Set variables for use in other requests (especially for polling the result)
+              if (jsonData.scan_id) {
+                  pm.variables.set("scan_id", jsonData.scan_id);
+                  console.log(`Set scan_id: ${jsonData.scan_id}`);
+              }
+              
+              if (jsonData.report_id) {
+                  pm.variables.set("report_id", jsonData.report_id);
+                  console.log(`Set report_id: ${jsonData.report_id}`);
+              }
+              
+          } catch (e) {
+              console.error("Error in test script:", e);
+          }
+      }
+
+      // Set default maximum response time if not already set
+      if (!pm.variables.get("maxResponseTime")) {
+          pm.variables.set("maxResponseTime", "2000");
+      }
+
+      // Run the async scan request tests
+      asyncScanRequestTests();
+
+      // Test response time
+      try {
+          // Test response time
+          pm.test("Response time is within an acceptable range", function () {
+              const maxResponseTime = parseInt(pm.variables.get("maxResponseTime") || 2000);
+              pm.expect(pm.response.responseTime).to.be.below(maxResponseTime);
+              
+              // Store the actual response time for reference
+              pm.variables.set("lastResponseTime", pm.response.responseTime);
+              console.log(`Response time: ${pm.response.responseTime}ms (threshold: ${maxResponseTime}ms)`);
+          });
+          
+          console.log("Test validation complete for UC-9: Async Detect PII in Prompt");
+      } catch (e) {
+          console.error("Error in test script:", e);
+      }
+
+      // Create a visualization for the response
+      var template = `
+      <style type="text/css">
+          .tftable {font-size:14px;color:#333333;width:100%;border-width: 1px;border-color: #87ceeb;border-collapse: collapse;}
+          .tftable th {font-size:18px;background-color:#87ceeb;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;text-align:left;}
+          .tftable tr {background-color:#ffffff;}
+          .tftable td {font-size:14px;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;word-break: break-all;}
+          .tftable tr:hover {background-color:#e0ffff;}
+          .info-box {background-color: #f0f8ff; border-left: 4px solid #1e90ff; padding: 15px; margin: 10px 0; border-radius: 4px;}
+      </style>
+
+      <div style="text-align: center; margin-bottom: 10px;">
+          <h3>Async Scan Request Submitted</h3>
+          <p>The request has been accepted for processing. Use the scan_id to check the result status.</p>
+      </div>
+
+      <table class="tftable" border="1">
+          <tr>
+              <th>Received Timestamp</th>
+              <th>Report ID</th>
+              <th>Scan ID</th>
+          </tr>
+          <tr>
+              <td>{{response.received}}</td>
+              <td>{{response.report_id}}</td>
+              <td>{{response.scan_id}}</td>
+          </tr>
+      </table>
+
+      <div class="info-box">
+          <p><strong>Next Step:</strong> Poll the scan result using:</p>
+          <code>GET /v1/scan/status/{{response.scan_id}}</code>
+      </div>
+      `;
+
+      function constructVisualizerPayload() {
+          return { response: pm.response.json() };
+      }
+
+      pm.visualizer.set(template, constructVisualizerPayload());
+    language: text/javascript
+order: 1000

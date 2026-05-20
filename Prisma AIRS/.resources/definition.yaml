@@ -1,0 +1,22 @@
+$kind: collection
+name: Prisma AIRS
+description: "Combined Prisma AIRS collection with working authentication. Uses profile_name: advancedtest"
+variables:
+  x-pan-token: "{{x-pan-token}}"
+  airs_profile_name: advancedtest
+  airs_app_name: scott
+  airs_app_user: admin
+  airs_ai_model: scottai
+  scm_tsg_id: "{{placeholder}}"
+  scm_client_id: "{{placeholder}}"
+  scm_client_secret: "{{placeholder}}"
+  scm_access_token: "{{placeholder}}"
+
+auth:
+  - id: ca4f3540-f56f-423e-897a-e162136c0ccb
+    type: apikey
+    name: apikey auth
+    credentials:
+      value: "{{x-pan-token}}"
+      key: x-pan-token
+      in: header

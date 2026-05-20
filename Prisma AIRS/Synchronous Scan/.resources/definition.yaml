@@ -1,0 +1,3 @@
+$kind: collection
+description: Synchronous scan requests return immediate results after scanning the provided prompt or response. This is suitable for real-time detection during user interactions.
+order: 2000

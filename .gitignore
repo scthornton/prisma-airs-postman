@@ -13,6 +13,8 @@ credentials.json
 *_credentials.*
 **/*api_key*
 **/*token*
+# Exception: Allow Postman request files with "token" in the name
+!**/*.request.yaml
 .secrets/
 
 # ==============================================================================
@@ -439,3 +441,6 @@ notes.md
 todo.md
 *.chat
 *.conversation
+
+# OS artifacts
+.DS_Store

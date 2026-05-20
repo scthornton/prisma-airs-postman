@@ -1,0 +1,28 @@
+$kind: http-request
+description: "Tests sensitive data detection (bank accounts, credit cards, API keys). Expected: dlp=true, category=malicious, action=block"
+url: https://service.api.aisecurity.paloaltonetworks.com/v1/scan/sync/request
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "tr_id": "123",
+      "ai_profile": {
+        "profile_name": "{{airs_profile_name}}"
+      },
+      "metadata": {
+        "app_name": "{{airs_app_name}}",
+        "app_user": "{{airs_app_user}}",
+        "ai_model": "{{airs_ai_model}}"
+      },
+      "contents": [
+        {
+          "prompt": "bank account 8775664322 routing number 2344567 dNFYiMZqQrLH35YIsEdgh2OXRXBiE7Ko1lR1nVoiJsUXdJ2T2xiT1gzL8w 6011111111111117",
+          "response": "This is a test response"
+        }
+      ]
+    }
+order: 3000

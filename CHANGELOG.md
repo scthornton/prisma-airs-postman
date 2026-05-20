@@ -14,3 +14,7 @@
 ### Modified
 - Added variables for test calls
 - Added 2 MCP tool call examples
+
+### Added
+- SCM Authentication for OAuth2 token
+- Prompt/Response raw payload extraction GET request

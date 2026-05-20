@@ -1,0 +1,14 @@
+$kind: http-request
+name: "Step2: Get Prompt/Response"
+description: "Uses Bearer token from Step1. Retrieves prompt/response content for a specific scan_id"
+url: https://api.sase.paloaltonetworks.com/aisec/v1/mgmt/reports/scancontent?scan_id=ff142e6e-7cf9-4030-8a17-59445e0c83bf&scan_sub_req_id=0
+method: GET
+queryParams:
+  - key: scan_id
+    value: ff142e6e-7cf9-4030-8a17-59445e0c83bf
+    description: scan_id for prompt/response
+  - key: scan_sub_req_id
+    value: "0"
+headers:
+  Authorization: Bearer {{scm_access_token}}
+order: 1779282157985

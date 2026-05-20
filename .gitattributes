@@ -26,6 +26,9 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 
+# Postman Cloud sync - use ours strategy to prefer git version
+.postman/resources.yaml merge=ours
+
 # JavaScript/TypeScript
 *.js text eol=lf
 *.jsx text eol=lf

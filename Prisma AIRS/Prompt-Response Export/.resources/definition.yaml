@@ -1,0 +1,4 @@
+$kind: collection
+name: Prompt/Response Export
+description: API to export the prompt/response from Prism AIRs, unofficial API.. not supported officially.
+order: 973012120633343
